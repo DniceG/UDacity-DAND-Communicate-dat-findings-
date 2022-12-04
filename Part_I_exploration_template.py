@@ -18,7 +18,7 @@
 # ## Preliminary Wrangling
 # 
 
-# In[2]:
+# In[1]:
 
 
 # import all packages and set plots to be embedded inline
@@ -43,7 +43,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 # # A. Getting Jan 2020 Baywheels-Data zip file
 
-# In[3]:
+# In[2]:
 
 
 # Read CSV file
@@ -51,7 +51,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 bw = pd.read_csv('201902-fordgobike-tripdata.csv')
 
 
-# In[4]:
+# In[3]:
 
 
 # high-level overview of data shape and composition
@@ -60,19 +60,52 @@ print(bw.dtypes)
 print(bw.head(10))
 
 
-# In[5]:
+# In[4]:
 
 
 bw.describe()
 
 
+# In[5]:
+
+
+# how many trips have a minimum duration ( 1 minute and 1 second )
+
+bw[(bw['duration_sec']== 61)].shape[0]
+
+
+# In[6]:
+
+
+# how many trips have a minimum duration of the average trip ( 12 minute )
+bw[(bw['duration_sec']== 726)].shape[0]
+
+
 # In[7]:
 
 
-# how many trips have a minimum duration of at least 60 seconds ( 1 minute )
+bw[(bw['duration_sec']>= 80000)].shape[0]
 
-bw[bw.duration_sec >= 60].count()
 
+# In[8]:
+
+
+bw.nlargest(10, ['duration_sec'])
+
+
+# In[9]:
+
+
+bw.isna().sum()
+
+
+# In[10]:
+
+
+bw.user_type.value_counts()
+
+
+# # Data Analysis
 
 # ### What is the structure of your dataset?
 # 
@@ -100,21 +133,139 @@ bw[bw.duration_sec >= 60].count()
 # >**Rubric Tip**: Use the "Question-Visualization-Observations" framework  throughout the exploration. This framework involves **asking a question from the data, creating a visualization to find answers, and then recording observations after each visualisation.** 
 # 
 
+# Adding new duration segments to anayze the data easier 
+
+# In[11]:
+
+
+bw.insert(1, 'duration_minutes', bw.duration_sec/60)
+bw.insert(1, 'duration_hours', bw.duration_sec/3600)
+bw.insert(1, 'duration_days', bw.duration_hours/24)
+
+
+# In[12]:
+
+
+# Average Duration 
+bw.describe()
+
+
+# Adding day names
+
+# In[13]:
+
+
+#changing data type to datetime
+bw[['start_time', 'end_time']] = bw[['start_time', 'end_time']].apply(pd.to_datetime)
+
+
+# In[14]:
+
+
+# Day name column
+bw.insert(4, 'start_day', bw['start_time'].dt.day_name())
+bw.insert(6, 'end_day', bw['end_time'].dt.day_name())
+
+
+# Extract other relevent date information from datetime variable
+
+# In[21]:
+
+
+bw['start_date_dt']=pd.to_datetime(bw['start_time'])
+
+bw['date'] = bw['start_date_dt'].dt.date
+bw['year'] = bw['start_date_dt'].dt.year
+bw['day']=bw['start_date_dt'].dt.day
+bw['month'] = bw['start_date_dt'].dt.month
+bw['dayname']=bw['start_date_dt'].dt.strftime("%A")
+bw['monthname'] = bw['start_date_dt'].dt.strftime("%B")
+bw['time'] = bw['start_date_dt'].dt.time
+
+
 # In[ ]:
 
 
 
 
+
+# In[22]:
+
+
+bw.info()
+
+
+# In[23]:
+
+
+bw.describe
+
+
+# In[24]:
+
+
+# Duration of bike rides in minutess 
+plt.figure(figsize=[14.70, 8.27])
+bin_edges = np.arange(0, 45, 1)
+ticks = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45]
+labels = ['{}'.format(val) for val in ticks]
+
+plt.hist(data = bw, x = 'duration_minutes', bins = bin_edges, rwidth = 0.8);
+plt.title('Trip Duration in minutes', y=1.05, fontsize=14, fontweight='bold')
+plt.xlabel('Duration in minutes', fontweight='bold')
+plt.xticks(ticks, labels)
+plt.ylabel('Number of Bike Trips', fontweight='bold')
+
+
+# Looking at the graph it apears that most of the rides tend to be concentrated between 3-15 minutes
 
 # 
 # 
 # >**Rubric Tip**: Visualizations should depict the data appropriately so that the plots are easily interpretable. You should choose an appropriate plot type, data encodings, and formatting as needed. The formatting may include setting/adding the title, labels, legend, and comments. Also, do not overplot or incorrectly plot ordinal data.
 
-# In[ ]:
+# What days have the most trips 
+
+# In[25]:
 
 
+bw.dayname.value_counts()
 
 
+# What dates have the most trips 
+
+# In[26]:
+
+
+bw.day.value_counts()
+
+
+# plt.figure(figsize=[14.70, 8.27])
+# bin_edges = np.arange(0, 45, 1)
+# ticks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
+# labels = ['{}'.format(val) for val in ticks]
+# 
+# plt.hist(data = bw, x = 'duration_minutes', bins = bin_edges, rwidth = 0.8);
+# plt.title('Trip Duration in minutes', y=1.05, fontsize=14, fontweight='bold')
+# plt.xlabel('Duration in minutes', fontweight='bold')
+# plt.xticks(ticks, labels)
+# plt.ylabel('Number of Bike Trips', fontweight='bold')
+
+# In[41]:
+
+
+plt.figure(figsize=[14.70, 8.27])
+bin_edges = np.arange(0, 10, 0.5)
+ticks = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+labels = ['{}'.format(val) for val in ticks]
+
+plt.hist(data = bw, x = 'dayname', bins = bin_edges, rwidth = 0.8);
+plt.title('Trips by days', y=1.05, fontsize=14, fontweight='bold')
+plt.xlabel('Days of the week', fontweight='bold')
+plt.xticks(ticks, labels)
+plt.ylabel('Number of Bike Trips', fontweight='bold')
+
+
+# 
 
 # ### Discuss the distribution(s) of your variable(s) of interest. Were there any unusual points? Did you need to perform any transformations?
 # 
@@ -179,6 +330,12 @@ bw[bw.duration_sec >= 60].count()
 # the quote-formatted guide notes like this one before you finish your report!
 # 
 # 
+
+# In[ ]:
+
+
+
+
 
 # In[ ]:
 
